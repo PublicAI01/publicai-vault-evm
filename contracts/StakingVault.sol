@@ -5,13 +5,14 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
  * @title StakingVault
  * @dev A staking contract that allows users to stake ERC20 tokens for a fixed period
  * Based on the NEAR lib.rs implementation
  */
-contract StakingVault is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract StakingVault is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable,UUPSUpgradeable {
     // Constants
     uint64 public constant WEEK = 7 * 24 * 60 * 60; // 7 days in seconds
     uint128 public constant DEFAULT_STAKE_AMOUNT = 100e18; // Default 100 tokens (18 decimals)
@@ -63,6 +64,7 @@ contract StakingVault is Initializable, OwnableUpgradeable, ReentrancyGuardUpgra
 
         __Ownable_init(msg.sender);
         __ReentrancyGuard_init();
+        __UUPSUpgradeable_init();
 
         tokenContract = IERC20(_tokenContract);
         banId = _banId;
@@ -74,6 +76,11 @@ contract StakingVault is Initializable, OwnableUpgradeable, ReentrancyGuardUpgra
         totalBannedAmount = 0;
         totalBannedUser = 0;
     }
+
+    /**
+     * @dev Authorize upgrade (required by UUPSUpgradeable)
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /**
      * @dev Pause or resume staking (only callable by owner)

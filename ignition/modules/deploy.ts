@@ -1,6 +1,7 @@
 import { ethers, upgrades } from "hardhat";
 
 async function main() {
+  console.log("Deploying StakingVault contract...\n");
   const [deployer] = await ethers.getSigners();
 
   console.log("Deploying contracts with the account:", deployer.address);
@@ -10,7 +11,10 @@ async function main() {
   // Replace these with your actual token contract address and ban account address
   const tokenContractAddress = process.env.TOKEN_CONTRACT_ADDRESS || "";
   const banAccountAddress = process.env.BAN_ACCOUNT_ADDRESS || deployer.address;
-
+  console.log("Configuration:");
+  console.log("- PUBLIC Token:", tokenContractAddress);
+  console.log("- Ban account:", banAccountAddress);
+  console.log();
   if (!tokenContractAddress) {
     console.log("\nNo TOKEN_CONTRACT_ADDRESS provided, deploying MockERC20 for testing...");
     const MockERC20 = await ethers.getContractFactory("MockERC20");
@@ -26,7 +30,7 @@ async function main() {
     const stakingVault = await upgrades.deployProxy(
       StakingVault,
       [finalTokenAddress, banAccountAddress],
-      { initializer: "initialize" }
+      { kind: "uups", initializer: "initialize" }
     );
     await stakingVault.waitForDeployment();
 
@@ -39,11 +43,14 @@ async function main() {
     const stakingVault = await upgrades.deployProxy(
       StakingVault,
       [tokenContractAddress, banAccountAddress],
-      { initializer: "initialize" }
+      { kind: "uups", initializer: "initialize" }
     );
     await stakingVault.waitForDeployment();
-
-    console.log("StakingVault deployed to:", await stakingVault.getAddress());
+    const proxyAddress = await stakingVault.getAddress();
+    const implAddress = await upgrades.erc1967.getImplementationAddress(proxyAddress);
+    console.log("✅ Proxy Address:", proxyAddress);
+    console.log("✅ Implementation Address:", implAddress);
+    console.log();
     console.log("Ban account:", banAccountAddress);
     console.log("Token contract:", tokenContractAddress);
   }
